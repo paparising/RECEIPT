@@ -1,8 +1,10 @@
 package com.example.receipt.dto;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 public class YearlyReportRequest implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private String propertyName;

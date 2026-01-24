@@ -64,7 +64,7 @@ public class ReportMessageConsumerTest {
             receipt.setId((long) i);
             receipt.setDescription("Receipt " + i);
             receipt.setAmount(100.0 * i);
-            receipt.setReceiptDate("2024-01-" + String.format("%02d", i) + " 10:00:00");
+            receipt.setReceiptDate("2024-01-" + "%02d".formatted(i) + " 10:00:00");
             receipt.setYear(2024);
 
             PropertyReceipt propertyReceipt = new PropertyReceipt();
@@ -206,7 +206,7 @@ public class ReportMessageConsumerTest {
             receipt.setId((long) i);
             receipt.setDescription("Receipt " + i);
             receipt.setAmount(100.0 * i);
-            receipt.setReceiptDate("2024-01-" + String.format("%02d", i % 28 + 1) + " 10:00:00");
+            receipt.setReceiptDate("2024-01-" + "%02d".formatted(i % 28 + 1) + " 10:00:00");
             receipt.setYear(2024);
 
             PropertyReceipt propertyReceipt = new PropertyReceipt();

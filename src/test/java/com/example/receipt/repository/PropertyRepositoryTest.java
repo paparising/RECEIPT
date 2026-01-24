@@ -103,7 +103,7 @@ public class PropertyRepositoryTest {
         assertTrue(result.isPresent());
         assertEquals("Test Property", result.get().getName());
         assertEquals(1, result.get().getPropertyReceipts().size());
-        assertEquals(2024, result.get().getPropertyReceipts().get(0).getReceipt().getYear());
+        assertEquals(2024, result.get().getPropertyReceipts().getFirst().getReceipt().getYear());
     }
 
     @Test

@@ -45,7 +45,7 @@ public class ReportMessageConsumer {
                 return;
             }
 
-            Property property = properties.get(0);
+            Property property = properties.getFirst();
             
             // Filter receipts by year
             List<PropertyReceipt> yearlyReceipts = property.getPropertyReceipts().stream()
@@ -112,7 +112,7 @@ public class ReportMessageConsumer {
         html.append("<hr>");
         html.append("<h3>Summary</h3>");
         html.append("<p><strong>Total Receipts:</strong> ").append(receipts.size()).append("</p>");
-        html.append("<p><strong>Total Amount:</strong> $").append(String.format("%.2f", totalAmount)).append("</p>");
+        html.append("<p><strong>Total Amount:</strong> $").append("%.2f".formatted(totalAmount)).append("</p>");
         
         // Table
         html.append("<hr>");
@@ -132,8 +132,8 @@ public class ReportMessageConsumer {
             html.append("<tr>");
             html.append("<td style='padding: 8px; border: 1px solid #ddd;'>").append(receipt.getReceipt().getReceiptDate()).append("</td>");
             html.append("<td style='padding: 8px; border: 1px solid #ddd;'>").append(receipt.getReceipt().getDescription()).append("</td>");
-            html.append("<td style='padding: 8px; border: 1px solid #ddd; text-align: right;'>$").append(String.format("%.2f", receipt.getReceipt().getAmount())).append("</td>");
-            html.append("<td style='padding: 8px; border: 1px solid #ddd; text-align: right;'>$").append(String.format("%.2f", receipt.getPortion())).append("</td>");
+            html.append("<td style='padding: 8px; border: 1px solid #ddd; text-align: right;'>$").append("%.2f".formatted(receipt.getReceipt().getAmount())).append("</td>");
+            html.append("<td style='padding: 8px; border: 1px solid #ddd; text-align: right;'>$").append("%.2f".formatted(receipt.getPortion())).append("</td>");
             html.append("</tr>");
         }
 
