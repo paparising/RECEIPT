@@ -18,6 +18,11 @@ if [ -f "scripts/git-commit" ]; then
 	echo "✓ Wrapper scripts/git-commit installed"
 fi
 
+# Configure local git alias so `git commit` uses the wrapper in this repo
+if git rev-parse --git-dir > /dev/null 2>&1; then
+  git config --local alias.commit '!f() { scripts/git-commit "$@"; }; f'
+  echo "✓ Git alias 'commit' configured to use scripts/git-commit (local only)"
+fi
 echo "✓ Pre-commit hook installed successfully"
 echo ""
 echo "The hook will now run before each commit and check:"
