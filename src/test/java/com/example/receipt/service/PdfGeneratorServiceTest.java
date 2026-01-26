@@ -44,7 +44,7 @@ public class PdfGeneratorServiceTest {
             receipt.setId((long) i);
             receipt.setDescription("Receipt " + i);
             receipt.setAmount(100.0 * i);
-            receipt.setReceiptDate("2024-01-" + String.format("%02d", i) + " 10:00:00");
+            receipt.setReceiptDate("2024-01-" + "%02d".formatted(i) + " 10:00:00");
             receipt.setYear(2024);
 
             PropertyReceipt propertyReceipt = new PropertyReceipt();
@@ -83,7 +83,7 @@ public class PdfGeneratorServiceTest {
     public void testGenerateYearlyReportPdfWithSingleReceipt() throws DocumentException {
         // Arrange
         List<PropertyReceipt> singleReceipt = new ArrayList<>();
-        singleReceipt.add(testReceipts.get(0));
+        singleReceipt.add(testReceipts.getFirst());
 
         // Act
         byte[] pdfBytes = pdfGeneratorService.generateYearlyReportPdf(testProperty, 2024, singleReceipt);
@@ -152,7 +152,7 @@ public class PdfGeneratorServiceTest {
             receipt.setId((long) i);
             receipt.setDescription("Large Receipt " + i);
             receipt.setAmount(50000.0 * i);
-            receipt.setReceiptDate("2024-01-" + String.format("%02d", i) + " 10:00:00");
+            receipt.setReceiptDate("2024-01-" + "%02d".formatted(i) + " 10:00:00");
             receipt.setYear(2024);
 
             PropertyReceipt propertyReceipt = new PropertyReceipt();

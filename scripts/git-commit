@@ -1,0 +1,76 @@
+#!/bin/bash
+# Wrapper to control pre-commit hook execution.
+# Usage:
+#   scripts/git-commit [--verify] [--dry-run] [git commit args...]
+# If --verify is provided, the pre-commit hook will run.
+# By default, commits will skip hooks.
+
+set -e
+
+show_help() {
+  cat <<EOF
+Usage: git-commit [--verify] [--dry-run] [git commit args...]
+
+Options:
+  --verify    Run the repository pre-commit hook (sets RUN_HOOK=1)
+  --dry-run   Print the git commit command that would be executed
+  --help      Show this help message
+
+Examples:
+  scripts/git-commit --verify -m "Fix bug"
+  scripts/git-commit -m "Trivial change"           # will skip hooks
+EOF
+}
+
+ENABLE_HOOK=0
+DRY_RUN=0
+COMMIT_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --verify)
+      ENABLE_HOOK=1
+      shift
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    *)
+      COMMIT_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# Build command
+GIT_BIN="$(command -v git)"
+
+if [ -z "$GIT_BIN" ]; then
+  echo "Could not find git binary in PATH" >&2
+  exit 1
+fi
+
+if [ "$ENABLE_HOOK" -eq 1 ]; then
+  CMD=("$GIT_BIN" commit "${COMMIT_ARGS[@]}")
+  # ensure RUN_HOOK=1 is exported for the hook process
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY-RUN: RUN_HOOK=1 ${CMD[*]}"
+    exit 0
+  else
+    export RUN_HOOK=1
+    exec "${CMD[@]}"
+  else
+    exec "${CMD[@]}"
+  CMD=(git commit --no-verify "${COMMIT_ARGS[@]}")
+  if [ "$DRY_RUN" -eq 1 ]; then
+  CMD=("$GIT_BIN" commit --no-verify "${COMMIT_ARGS[@]}")
+    exit 0
+  else
+    exec "${CMD[@]}"
+  fi
+fi

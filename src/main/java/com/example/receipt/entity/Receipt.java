@@ -1,5 +1,5 @@
 package com.example.receipt.entity;
-
+import jakarta.validation.constraints.NotNull;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.util.List;
@@ -11,7 +11,7 @@ public class Receipt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
     private String description;
 
     @Column(nullable = false)
@@ -23,6 +23,11 @@ public class Receipt {
 
     @Column(nullable = false, name = "receipt_year")
     private Integer year;
+
+    @NotNull(message = "Receipt source is required")
+    @ManyToOne
+    @JoinColumn(name = "receipt_source_id")
+    private ReceiptSource receiptSource;
 
     @OneToMany(mappedBy = "receipt", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PropertyReceipt> propertyReceipts;
@@ -66,6 +71,14 @@ public class Receipt {
 
     public void setYear(Integer year) {
         this.year = year;
+    }
+
+    public ReceiptSource getReceiptSource() {
+        return receiptSource;
+    }
+
+    public void setReceiptSource(ReceiptSource receiptSource) {
+        this.receiptSource = receiptSource;
     }
 
     public List<PropertyReceipt> getPropertyReceipts() {

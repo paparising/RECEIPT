@@ -14,9 +14,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
-public class PdfGeneratorService {
+public class PdfGeneratorService implements ReportGenerator {
 
+    /**
+     * Generate yearly receipt report in PDF format (legacy method for backward compatibility)
+     */
     public byte[] generateYearlyReportPdf(Property property, Integer year, List<PropertyReceipt> receipts) throws DocumentException {
+        return (byte[]) generateReport(property, year, receipts);
+    }
+
+    /**
+     * Generate yearly receipt report in PDF format
+     */
+    @Override
+    public byte[] generateReport(Property property, Integer year, List<PropertyReceipt> receipts) throws DocumentException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Document document = new Document(PageSize.A4, 50, 50, 50, 50);
         PdfWriter.getInstance(document, byteArrayOutputStream);
@@ -52,7 +63,7 @@ public class PdfGeneratorService {
         Paragraph summary = new Paragraph();
         summary.add(new Chunk("Summary:\n", headerFont));
         summary.add(new Chunk("Total Receipts: " + receipts.size() + "\n", regularFont));
-        summary.add(new Chunk("Total Amount: $" + String.format("%.2f", totalAmount) + "\n", regularFont));
+        summary.add(new Chunk("Total Amount: $" + "%.2f".formatted(totalAmount) + "\n", regularFont));
         summary.setSpacingAfter(20);
         document.add(summary);
 
@@ -79,8 +90,8 @@ public class PdfGeneratorService {
             addTableRow(table, 
                 receipt.getReceipt().getReceiptDate(),
                 receipt.getReceipt().getDescription(),
-                String.format("$%.2f", receipt.getReceipt().getAmount()),
-                String.format("$%.2f", receipt.getPortion()),
+                    "$%.2f".formatted(receipt.getReceipt().getAmount()),
+                    "$%.2f".formatted(receipt.getPortion()),
                 receipt.getReceipt().getId().toString(),
                 tableDataFont
             );
@@ -93,6 +104,16 @@ public class PdfGeneratorService {
         document.close();
 
         return byteArrayOutputStream.toByteArray();
+    }
+
+    @Override
+    public String getFileExtension() {
+        return "pdf";
+    }
+
+    @Override
+    public String getMimeType() {
+        return "application/pdf";
     }
 
     private void addTableRow(PdfPTable table, String date, String description, String amount, String portion, String receiptId, Font font) {
