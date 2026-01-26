@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import com.example.receipt.entity.Property;
 import com.example.receipt.entity.Receipt;
 import com.example.receipt.entity.PropertyReceipt;
+import com.example.receipt.entity.ReceiptSource;
 import java.util.Optional;
 
 @DataJpaTest
@@ -31,11 +32,17 @@ public class PropertyRepositoryTest {
         property.setZipCode("02101");
         entityManager.persistAndFlush(property);
 
+        ReceiptSource source = new ReceiptSource();
+        source.setRetailerName("Test Retailer");
+        source.setDescription("Test Retailer Description");
+        entityManager.persistAndFlush(source);
+
         Receipt receipt = new Receipt();
         receipt.setDescription("Test Receipt");
         receipt.setAmount(100.0);
         receipt.setReceiptDate("2024-01-15 10:30:00");
         receipt.setYear(2024);
+        receipt.setReceiptSource(source);
         entityManager.persistAndFlush(receipt);
 
         PropertyReceipt propertyReceipt = new PropertyReceipt();
@@ -68,11 +75,17 @@ public class PropertyRepositoryTest {
         property.setZipCode("02142");
         entityManager.persistAndFlush(property);
 
+        ReceiptSource source = new ReceiptSource();
+        source.setRetailerName("Test Retailer 2");
+        source.setDescription("Test Retailer Description 2");
+        entityManager.persistAndFlush(source);
+
         Receipt receipt2024 = new Receipt();
         receipt2024.setDescription("2024 Receipt");
         receipt2024.setAmount(150.0);
         receipt2024.setReceiptDate("2024-06-20 14:00:00");
         receipt2024.setYear(2024);
+        receipt2024.setReceiptSource(source);
         entityManager.persistAndFlush(receipt2024);
 
         Receipt receipt2023 = new Receipt();
@@ -80,6 +93,7 @@ public class PropertyRepositoryTest {
         receipt2023.setAmount(200.0);
         receipt2023.setReceiptDate("2023-05-10 09:15:00");
         receipt2023.setYear(2023);
+        receipt2023.setReceiptSource(source);
         entityManager.persistAndFlush(receipt2023);
 
         PropertyReceipt pr1 = new PropertyReceipt();

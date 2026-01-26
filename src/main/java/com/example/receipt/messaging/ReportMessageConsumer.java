@@ -4,9 +4,11 @@ import com.example.receipt.config.RabbitMQConfig;
 import com.example.receipt.dto.YearlyReportRequest;
 import com.example.receipt.entity.Property;
 import com.example.receipt.entity.PropertyReceipt;
+import com.example.receipt.enums.ReportType;
+import com.example.receipt.factory.ReportGeneratorFactory;
 import com.example.receipt.repository.PropertyRepository;
 import com.example.receipt.service.EmailService;
-import com.example.receipt.service.PdfGeneratorService;
+import com.example.receipt.service.ReportGenerator;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +25,7 @@ public class ReportMessageConsumer {
     private PropertyRepository propertyRepository;
 
     @Autowired
-    private PdfGeneratorService pdfGeneratorService;
+    private ReportGeneratorFactory reportGeneratorFactory;
 
     @Autowired
     private EmailService emailService;
@@ -32,7 +33,8 @@ public class ReportMessageConsumer {
     @RabbitListener(queues = RabbitMQConfig.REPORT_QUEUE)
     public void processReportRequest(YearlyReportRequest reportRequest) {
         try {
-            System.out.println("Processing report request for property: " + reportRequest.getPropertyName());
+            System.out.println("Processing report request for property: " + reportRequest.getPropertyName() + 
+                             " with report type: " + reportRequest.getReportType());
             
             // Find property by name
             List<Property> properties = propertyRepository.findAll().stream()
@@ -58,24 +60,29 @@ public class ReportMessageConsumer {
                 return;
             }
 
-            // Generate PDF
-            byte[] pdfContent = pdfGeneratorService.generateYearlyReportPdf(
+            // Get the appropriate report generator based on report type
+            ReportType reportType = ReportType.fromCode(reportRequest.getReportType());
+            ReportGenerator reportGenerator = reportGeneratorFactory.getGenerator(reportType);
+
+            // Generate report
+            byte[] reportContent = reportGenerator.generateReport(
                 property, 
                 reportRequest.getYear(), 
                 yearlyReceipts
             );
 
             // Create email HTML content
-            String htmlContent = createEmailHtml(property, reportRequest.getYear(), yearlyReceipts);
+            String htmlContent = createEmailHtml(property, reportRequest.getYear(), yearlyReceipts, reportType);
             
-            // Send email with PDF attachment
-            String pdfFileName = property.getName().replaceAll(" ", "_") + "_Report_" + reportRequest.getYear() + ".pdf";
+            // Send email with report attachment
+            String reportFileName = property.getName().replaceAll(" ", "_") + "_Report_" + reportRequest.getYear() + 
+                                   "." + reportGenerator.getFileExtension();
             emailService.sendReportEmail(
                 reportRequest.getUserEmail(),
-                "Yearly Receipt Report - " + property.getName() + " (" + reportRequest.getYear() + ")",
+                "Yearly Receipt Report (" + reportType.getCode() + ") - " + property.getName() + " (" + reportRequest.getYear() + ")",
                 htmlContent,
-                pdfContent,
-                pdfFileName
+                reportContent,
+                reportFileName
             );
 
             System.out.println("Report sent successfully to " + reportRequest.getUserEmail());
@@ -92,7 +99,7 @@ public class ReportMessageConsumer {
         }
     }
 
-    private String createEmailHtml(Property property, Integer year, List<PropertyReceipt> receipts) {
+    private String createEmailHtml(Property property, Integer year, List<PropertyReceipt> receipts, ReportType reportType) {
         double totalAmount = receipts.stream().mapToDouble(PropertyReceipt::getPortion).sum();
         
         StringBuilder html = new StringBuilder();
@@ -100,12 +107,13 @@ public class ReportMessageConsumer {
         html.append("<div style='max-width: 600px; margin: 0 auto;'>");
         
         // Header
-        html.append("<h2 style='color: #2980b9;'>Yearly Receipt Report</h2>");
+        html.append("<h2 style='color: #2980b9;'>Yearly Receipt Report (").append(reportType.getCode()).append(")</h2>");
         html.append("<p><strong>Property:</strong> ").append(property.getName()).append("</p>");
         html.append("<p><strong>Address:</strong> ").append(property.getStreetNumber()).append(" ")
             .append(property.getStreetName()).append(", ").append(property.getCity()).append(", ")
             .append(property.getState()).append(" ").append(property.getZipCode()).append("</p>");
         html.append("<p><strong>Year:</strong> ").append(year).append("</p>");
+        html.append("<p><strong>Report Type:</strong> ").append(reportType.getCode()).append("</p>");
         html.append("<p><strong>Generated:</strong> ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("</p>");
         
         // Summary
@@ -142,7 +150,7 @@ public class ReportMessageConsumer {
         
         // Footer
         html.append("<hr>");
-        html.append("<p style='font-size: 12px; color: #666;'><em>This is an automated report generated by the Receipt System. Please see attached PDF for detailed report.</em></p>");
+        html.append("<p style='font-size: 12px; color: #666;'><em>This is an automated report generated by the Receipt System. Please see attached ").append(reportType.getCode().toUpperCase()).append(" for detailed report.</em></p>");
         html.append("</div>");
         html.append("</body></html>");
         

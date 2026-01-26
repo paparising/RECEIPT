@@ -14,9 +14,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
-public class PdfGeneratorService {
+public class PdfGeneratorService implements ReportGenerator {
 
+    /**
+     * Generate yearly receipt report in PDF format (legacy method for backward compatibility)
+     */
     public byte[] generateYearlyReportPdf(Property property, Integer year, List<PropertyReceipt> receipts) throws DocumentException {
+        return (byte[]) generateReport(property, year, receipts);
+    }
+
+    /**
+     * Generate yearly receipt report in PDF format
+     */
+    @Override
+    public byte[] generateReport(Property property, Integer year, List<PropertyReceipt> receipts) throws DocumentException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Document document = new Document(PageSize.A4, 50, 50, 50, 50);
         PdfWriter.getInstance(document, byteArrayOutputStream);
@@ -93,6 +104,16 @@ public class PdfGeneratorService {
         document.close();
 
         return byteArrayOutputStream.toByteArray();
+    }
+
+    @Override
+    public String getFileExtension() {
+        return "pdf";
+    }
+
+    @Override
+    public String getMimeType() {
+        return "application/pdf";
     }
 
     private void addTableRow(PdfPTable table, String date, String description, String amount, String portion, String receiptId, Font font) {

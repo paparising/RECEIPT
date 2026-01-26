@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: src/Dockerfile
-    container_name: spring-app
+    container_name: receiptManager-app
     depends_on:
       - mysql
       - rabbitmq

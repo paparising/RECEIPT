@@ -4,9 +4,11 @@ import com.example.receipt.dto.YearlyReportRequest;
 import com.example.receipt.entity.Property;
 import com.example.receipt.entity.PropertyReceipt;
 import com.example.receipt.entity.Receipt;
+import com.example.receipt.enums.ReportType;
+import com.example.receipt.factory.ReportGeneratorFactory;
 import com.example.receipt.repository.PropertyRepository;
 import com.example.receipt.service.EmailService;
-import com.example.receipt.service.PdfGeneratorService;
+import com.example.receipt.service.ReportGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +30,10 @@ public class ReportMessageConsumerTest {
     private PropertyRepository propertyRepository;
 
     @Mock
-    private PdfGeneratorService pdfGeneratorService;
+    private ReportGeneratorFactory reportGeneratorFactory;
+
+    @Mock
+    private ReportGenerator reportGenerator;
 
     @Mock
     private EmailService emailService;
@@ -81,10 +86,11 @@ public class ReportMessageConsumerTest {
     @Test
     public void testProcessReportMessageSuccess() throws Exception {
         // Arrange
-        byte[] pdfContent = "PDF_CONTENT".getBytes();
+        byte[] reportContent = "REPORT_CONTENT".getBytes();
         when(propertyRepository.findAll()).thenReturn(List.of(testProperty));
-        when(pdfGeneratorService.generateYearlyReportPdf(eq(testProperty), eq(2024), any()))
-                .thenReturn(pdfContent);
+        when(reportGeneratorFactory.getGenerator(ReportType.PDF)).thenReturn(reportGenerator);
+        when(reportGenerator.generateReport(eq(testProperty), eq(2024), any())).thenReturn(reportContent);
+        when(reportGenerator.getFileExtension()).thenReturn("pdf");
         doNothing().when(emailService).sendReportEmail(anyString(), anyString(), anyString(), any(byte[].class), anyString());
 
         // Act
@@ -92,7 +98,8 @@ public class ReportMessageConsumerTest {
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
-        verify(pdfGeneratorService, times(1)).generateYearlyReportPdf(eq(testProperty), eq(2024), any());
+        verify(reportGeneratorFactory, times(1)).getGenerator(ReportType.PDF);
+        verify(reportGenerator, times(1)).generateReport(eq(testProperty), eq(2024), any());
         verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString(), any(byte[].class), anyString());
     }
 
@@ -107,7 +114,7 @@ public class ReportMessageConsumerTest {
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
-        verify(pdfGeneratorService, times(0)).generateYearlyReportPdf(any(), any(), any());
+        verify(reportGeneratorFactory, times(0)).getGenerator(any(ReportType.class));
         verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString());
     }
 
@@ -127,7 +134,7 @@ public class ReportMessageConsumerTest {
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
-        verify(pdfGeneratorService, times(0)).generateYearlyReportPdf(any(), any(), any());
+        verify(reportGeneratorFactory, times(0)).getGenerator(any(ReportType.class));
         verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString());
     }
 
@@ -135,8 +142,9 @@ public class ReportMessageConsumerTest {
     public void testProcessReportMessagePdfGenerationError() throws Exception {
         // Arrange
         when(propertyRepository.findAll()).thenReturn(List.of(testProperty));
-        when(pdfGeneratorService.generateYearlyReportPdf(any(), any(), any()))
-                .thenThrow(new RuntimeException("PDF generation failed"));
+        when(reportGeneratorFactory.getGenerator(ReportType.PDF)).thenReturn(reportGenerator);
+        when(reportGenerator.generateReport(any(), any(), any()))
+                .thenThrow(new RuntimeException("Report generation failed"));
         doNothing().when(emailService).sendReportEmail(anyString(), anyString(), anyString());
 
         // Act
@@ -144,17 +152,19 @@ public class ReportMessageConsumerTest {
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
-        verify(pdfGeneratorService, times(1)).generateYearlyReportPdf(any(), any(), any());
+        verify(reportGeneratorFactory, times(1)).getGenerator(ReportType.PDF);
+        verify(reportGenerator, times(1)).generateReport(any(), any(), any());
         verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString());
     }
 
     @Test
     public void testProcessReportMessageEmailSendingError() throws Exception {
         // Arrange
-        byte[] pdfContent = "PDF_CONTENT".getBytes();
+        byte[] reportContent = "REPORT_CONTENT".getBytes();
         when(propertyRepository.findAll()).thenReturn(List.of(testProperty));
-        when(pdfGeneratorService.generateYearlyReportPdf(any(), any(), any()))
-                .thenReturn(pdfContent);
+        when(reportGeneratorFactory.getGenerator(ReportType.PDF)).thenReturn(reportGenerator);
+        when(reportGenerator.generateReport(any(), any(), any())).thenReturn(reportContent);
+        when(reportGenerator.getFileExtension()).thenReturn("pdf");
         doThrow(new RuntimeException("Email sending failed"))
                 .when(emailService).sendReportEmail(anyString(), anyString(), anyString(), any(byte[].class), anyString());
 
@@ -163,7 +173,8 @@ public class ReportMessageConsumerTest {
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
-        verify(pdfGeneratorService, times(1)).generateYearlyReportPdf(any(), any(), any());
+        verify(reportGeneratorFactory, times(1)).getGenerator(ReportType.PDF);
+        verify(reportGenerator, times(1)).generateReport(any(), any(), any());
         verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString(), any(byte[].class), anyString());
     }
 
@@ -182,10 +193,11 @@ public class ReportMessageConsumerTest {
         anotherProperty.setName("Downtown Office");
         anotherProperty.setPropertyReceipts(testReceipts);
 
-        byte[] pdfContent = "PDF_CONTENT".getBytes();
+        byte[] reportContent = "REPORT_CONTENT".getBytes();
         when(propertyRepository.findAll()).thenReturn(List.of(anotherProperty));
-        when(pdfGeneratorService.generateYearlyReportPdf(any(Property.class), eq(2024), any()))
-                .thenReturn(pdfContent);
+        when(reportGeneratorFactory.getGenerator(ReportType.PDF)).thenReturn(reportGenerator);
+        when(reportGenerator.generateReport(any(Property.class), eq(2024), any())).thenReturn(reportContent);
+        when(reportGenerator.getFileExtension()).thenReturn("pdf");
         doNothing().when(emailService).sendReportEmail(any(), any(), any(), any(byte[].class), any());
 
         // Act
@@ -193,7 +205,8 @@ public class ReportMessageConsumerTest {
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
-        verify(pdfGeneratorService, times(1)).generateYearlyReportPdf(any(Property.class), eq(2024), any());
+        verify(reportGeneratorFactory, times(1)).getGenerator(ReportType.PDF);
+        verify(reportGenerator, times(1)).generateReport(any(Property.class), eq(2024), any());
         verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString(), any(byte[].class), anyString());
     }
 
@@ -219,10 +232,11 @@ public class ReportMessageConsumerTest {
         }
         testProperty.setPropertyReceipts(manyReceipts);
 
-        byte[] pdfContent = "PDF_CONTENT".getBytes();
+        byte[] reportContent = "REPORT_CONTENT".getBytes();
         when(propertyRepository.findAll()).thenReturn(List.of(testProperty));
-        when(pdfGeneratorService.generateYearlyReportPdf(eq(testProperty), eq(2024), any()))
-                .thenReturn(pdfContent);
+        when(reportGeneratorFactory.getGenerator(ReportType.PDF)).thenReturn(reportGenerator);
+        when(reportGenerator.generateReport(eq(testProperty), eq(2024), any())).thenReturn(reportContent);
+        when(reportGenerator.getFileExtension()).thenReturn("pdf");
         doNothing().when(emailService).sendReportEmail(any(), any(), any(), any(byte[].class), any());
 
         // Act
@@ -230,7 +244,8 @@ public class ReportMessageConsumerTest {
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
-        verify(pdfGeneratorService, times(1)).generateYearlyReportPdf(eq(testProperty), eq(2024), any());
+        verify(reportGeneratorFactory, times(1)).getGenerator(ReportType.PDF);
+        verify(reportGenerator, times(1)).generateReport(eq(testProperty), eq(2024), any());
         verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString(), any(byte[].class), anyString());
     }
 
