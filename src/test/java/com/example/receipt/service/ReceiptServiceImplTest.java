@@ -15,12 +15,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import com.example.receipt.dto.ReceiptDto;
-import com.example.receipt.dto.PropertyReceiptDto;
+import com.example.receipt.dto.PropertyAllocationDto;
 import com.example.receipt.entity.Receipt;
 import com.example.receipt.entity.ReceiptSource;
 import com.example.receipt.entity.PropertyReceipt;
 import com.example.receipt.entity.Property;
 import com.example.receipt.repository.ReceiptRepository;
+import com.example.receipt.repository.ReceiptSourceRepository;
 import com.example.receipt.service.impl.ReceiptServiceImpl;
 
 import java.util.ArrayList;
@@ -32,6 +33,9 @@ public class ReceiptServiceImplTest {
 
     @Mock
     private ReceiptRepository receiptRepository;
+    
+    @Mock
+    private ReceiptSourceRepository receiptSourceRepository;
 
     @InjectMocks
     private ReceiptServiceImpl receiptService;
@@ -82,6 +86,7 @@ public class ReceiptServiceImplTest {
         newReceipt.setYear(2024);
         newReceipt.setReceiptSource(testReceiptSource);
 
+        when(receiptSourceRepository.findById(1L)).thenReturn(Optional.of(testReceiptSource));
         when(receiptRepository.save(any(Receipt.class))).thenReturn(newReceipt);
 
         // Act
@@ -100,6 +105,7 @@ public class ReceiptServiceImplTest {
         testReceiptDto.setDescription("Updated Receipt");
         testReceiptDto.setAmount(150.0);
 
+        when(receiptSourceRepository.findById(1L)).thenReturn(Optional.of(testReceiptSource));
         when(receiptRepository.existsById(1L)).thenReturn(true);
         when(receiptRepository.findById(1L)).thenReturn(Optional.of(testReceipt));
         when(receiptRepository.save(any(Receipt.class))).thenReturn(testReceipt);
@@ -127,7 +133,7 @@ public class ReceiptServiceImplTest {
         assertTrue(result.isPresent());
         assertEquals("Test Receipt", result.get().getDescription());
         assertEquals(100.0, result.get().getAmount());
-        assertNull(result.get().getRelatedProperties());
+        assertNull(result.get().getPropertyAllocations());
         verify(receiptRepository, times(1)).findById(1L);
     }
 
@@ -179,22 +185,16 @@ public class ReceiptServiceImplTest {
         assertTrue(result.isPresent());
         assertEquals("Test Receipt", result.get().getDescription());
         assertEquals(100.0, result.get().getAmount());
-        assertNotNull(result.get().getRelatedProperties());
-        assertEquals(2, result.get().getRelatedProperties().size());
-        
-        PropertyReceiptDto relatedProp1 = result.get().getRelatedProperties().get(0);
-        assertEquals(10L, relatedProp1.getPropertyId());
+        assertNotNull(result.get().getPropertyAllocations());
+        assertEquals(2, result.get().getPropertyAllocations().size());
+
+        PropertyAllocationDto relatedProp1 = result.get().getPropertyAllocations().get(0);
         assertEquals("Property 1", relatedProp1.getPropertyName());
-        assertTrue(relatedProp1.getPropertyAddress().contains("123"));
-        assertTrue(relatedProp1.getPropertyAddress().contains("Main St"));
-        assertEquals(50.0, relatedProp1.getPortion());
+        assertEquals(50, relatedProp1.getPropertyPercentage());
         
-        PropertyReceiptDto relatedProp2 = result.get().getRelatedProperties().get(1);
-        assertEquals(11L, relatedProp2.getPropertyId());
+        PropertyAllocationDto relatedProp2 = result.get().getPropertyAllocations().get(1);
         assertEquals("Property 2", relatedProp2.getPropertyName());
-        assertTrue(relatedProp2.getPropertyAddress().contains("456"));
-        assertTrue(relatedProp2.getPropertyAddress().contains("Oak Ave"));
-        assertEquals(50.0, relatedProp2.getPortion());
+        assertEquals(50, relatedProp2.getPropertyPercentage());
         
         verify(receiptRepository, times(1)).findById(1L);
     }

@@ -4,10 +4,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.receipt.service.ReceiptService;
 import com.example.receipt.dto.ReceiptDto;
+import com.example.receipt.dto.ReceiptUpsertRequest;
+import com.example.receipt.dto.ReceiptDtoMapper;
+import com.example.receipt.dto.ErrorResponse;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,11 +22,36 @@ public class ReceiptController {
     @Autowired
     private ReceiptService receiptService;
     
+    @Autowired
+    private ReceiptDtoMapper receiptDtoMapper;
+    
     // Upsert receipt (create or update)
     @PostMapping("/upsert")
-    public ResponseEntity<ReceiptDto> upsertReceipt(@RequestBody ReceiptDto receiptDto) {
-        ReceiptDto savedReceipt = receiptService.upsertReceipt(receiptDto);
-        return ResponseEntity.ok(savedReceipt);
+    public ResponseEntity<?> upsertReceipt(@RequestBody ReceiptUpsertRequest request) {
+        try {
+            // Map request to DTO
+            ReceiptDto receiptDto = receiptDtoMapper.mapRequestToDto(request);
+            
+            // Pass DTO to service
+            ReceiptDto savedReceipt = receiptService.upsertReceipt(receiptDto);
+            return ResponseEntity.ok(savedReceipt);
+        } catch (IllegalArgumentException e) {
+            // Handle validation errors (e.g., property percentage sum)
+            ErrorResponse errorResponse = new ErrorResponse(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Invalid receipt data",
+                    e.getMessage()
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            // Handle unexpected errors
+            ErrorResponse errorResponse = new ErrorResponse(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Error processing receipt",
+                    e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
     
     // Get all receipts with pagination (default 100 per page)

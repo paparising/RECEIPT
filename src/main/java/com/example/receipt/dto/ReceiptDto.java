@@ -10,7 +10,7 @@ public class ReceiptDto {
     private String receiptDate;
     private Integer year;
     private Long receiptSourceId;
-    private List<PropertyReceiptDto> relatedProperties;
+    private List<PropertyAllocationDto> propertyAllocations;
     
     // Constructors
     public ReceiptDto() {
@@ -80,11 +80,11 @@ public class ReceiptDto {
         this.receiptSourceId = receiptSourceId;
     }
 
-    public List<PropertyReceiptDto> getRelatedProperties() {
-        return relatedProperties;
+    public List<PropertyAllocationDto> getPropertyAllocations() {
+        return propertyAllocations;
     }
 
-    public void setRelatedProperties(List<PropertyReceiptDto> relatedProperties) {
-        this.relatedProperties = relatedProperties;
+    public void setPropertyAllocations(List<PropertyAllocationDto> propertyAllocations) {
+        this.propertyAllocations = propertyAllocations;
     }
 }

@@ -17,7 +17,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.example.receipt.dto.ReceiptDto;
-import com.example.receipt.dto.PropertyReceiptDto;
+import com.example.receipt.dto.ReceiptUpsertRequest;
+import com.example.receipt.dto.PropertyAllocationDto;
+import com.example.receipt.dto.ReceiptDtoMapper;
 import com.example.receipt.service.ReceiptService;
 
 import java.util.ArrayList;
@@ -29,6 +31,9 @@ public class ReceiptControllerIntegrationTest {
 
     @Mock
     private ReceiptService receiptService;
+    
+    @Mock
+    private ReceiptDtoMapper receiptDtoMapper;
 
     @InjectMocks
     private ReceiptController receiptController;
@@ -49,16 +54,19 @@ public class ReceiptControllerIntegrationTest {
     @Test
     public void testUpsertReceipt() {
         // Arrange
+        ReceiptUpsertRequest request = new ReceiptUpsertRequest("2024-01-15", 100.0, "Test Store", "Test Receipt", new ArrayList<>());
+        when(receiptDtoMapper.mapRequestToDto(any(ReceiptUpsertRequest.class))).thenReturn(testReceiptDto);
         when(receiptService.upsertReceipt(any(ReceiptDto.class))).thenReturn(testReceiptDto);
 
         // Act
-        ResponseEntity<ReceiptDto> response = receiptController.upsertReceipt(testReceiptDto);
+        ResponseEntity<?> response = receiptController.upsertReceipt(request);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Test Receipt", response.getBody().getDescription());
-        assertEquals(100.0, response.getBody().getAmount());
+        ReceiptDto body = (ReceiptDto) response.getBody();
+        assertEquals("Test Receipt", body.getDescription());
+        assertEquals(100.0, body.getAmount());
         verify(receiptService, times(1)).upsertReceipt(any(ReceiptDto.class));
     }
 
@@ -131,10 +139,10 @@ public class ReceiptControllerIntegrationTest {
     @Test
     public void testGetReceiptByIdWithRelatedProperties() {
         // Arrange
-        List<PropertyReceiptDto> relatedProperties = new ArrayList<>();
-        relatedProperties.add(new PropertyReceiptDto(10L, "Property 1", "123 Main St, New York, NY 10001", 50.0));
-        relatedProperties.add(new PropertyReceiptDto(11L, "Property 2", "456 Oak Ave, Boston, MA 02101", 50.0));
-        testReceiptDto.setRelatedProperties(relatedProperties);
+        List<PropertyAllocationDto> propertyAllocations = new ArrayList<>();
+        propertyAllocations.add(new PropertyAllocationDto("Property 1", 50));
+        propertyAllocations.add(new PropertyAllocationDto("Property 2", 50));
+        testReceiptDto.setPropertyAllocations(propertyAllocations);
 
         when(receiptService.getReceiptById(1L)).thenReturn(Optional.of(testReceiptDto));
 
@@ -145,14 +153,12 @@ public class ReceiptControllerIntegrationTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Test Receipt", response.getBody().getDescription());
-        assertNotNull(response.getBody().getRelatedProperties());
-        assertEquals(2, response.getBody().getRelatedProperties().size());
+        assertNotNull(response.getBody().getPropertyAllocations());
+        assertEquals(2, response.getBody().getPropertyAllocations().size());
         
-        PropertyReceiptDto prop1 = response.getBody().getRelatedProperties().get(0);
-        assertEquals(10L, prop1.getPropertyId());
+        PropertyAllocationDto prop1 = response.getBody().getPropertyAllocations().get(0);
         assertEquals("Property 1", prop1.getPropertyName());
-        assertTrue(prop1.getPropertyAddress().contains("Main St"));
-        assertEquals(50.0, prop1.getPortion());
+        assertEquals(50, prop1.getPropertyPercentage());
         
         verify(receiptService, times(1)).getReceiptById(1L);
     }
@@ -283,13 +289,8 @@ public class ReceiptControllerIntegrationTest {
     @Test
     public void testUpsertReceiptCreateNew() {
         // Arrange
-        ReceiptDto newReceiptDto = new ReceiptDto();
-        newReceiptDto.setDescription("New Receipt");
-        newReceiptDto.setAmount(50.0);
-        newReceiptDto.setReceiptDate("2024-01-20 14:00:00");
-        newReceiptDto.setYear(2024);
-        newReceiptDto.setReceiptSourceId(1L);
-
+        ReceiptUpsertRequest request = new ReceiptUpsertRequest("2024-01-20", 50.0, "New Store", "New Receipt", new ArrayList<>());
+        
         ReceiptDto savedReceipt = new ReceiptDto();
         savedReceipt.setId(3L);
         savedReceipt.setDescription("New Receipt");
@@ -298,16 +299,18 @@ public class ReceiptControllerIntegrationTest {
         savedReceipt.setYear(2024);
         savedReceipt.setReceiptSourceId(1L);
 
-        when(receiptService.upsertReceipt(newReceiptDto)).thenReturn(savedReceipt);
+        when(receiptDtoMapper.mapRequestToDto(any(ReceiptUpsertRequest.class))).thenReturn(savedReceipt);
+        when(receiptService.upsertReceipt(any(ReceiptDto.class))).thenReturn(savedReceipt);
 
         // Act
-        ResponseEntity<ReceiptDto> response = receiptController.upsertReceipt(newReceiptDto);
+        ResponseEntity<?> response = receiptController.upsertReceipt(request);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("New Receipt", response.getBody().getDescription());
-        assertNotNull(response.getBody().getId());
-        verify(receiptService, times(1)).upsertReceipt(newReceiptDto);
+        ReceiptDto body = (ReceiptDto) response.getBody();
+        assertEquals("New Receipt", body.getDescription());
+        assertNotNull(body.getId());
+        verify(receiptService, times(1)).upsertReceipt(any(ReceiptDto.class));
     }
 }

@@ -6,11 +6,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.example.receipt.service.ReceiptService;
 import com.example.receipt.dto.ReceiptDto;
-import com.example.receipt.dto.PropertyReceiptDto;
+import com.example.receipt.dto.PropertyAllocationDto;
 import com.example.receipt.entity.Receipt;
 import com.example.receipt.entity.ReceiptSource;
 import com.example.receipt.entity.Property;
 import com.example.receipt.repository.ReceiptRepository;
+import com.example.receipt.repository.ReceiptSourceRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -20,6 +21,9 @@ public class ReceiptServiceImpl implements ReceiptService {
 
     @Autowired
     private ReceiptRepository receiptRepository;
+    
+    @Autowired
+    private ReceiptSourceRepository receiptSourceRepository;
 
     @Override
     public ReceiptDto upsertReceipt(ReceiptDto receiptDto) {
@@ -35,9 +39,17 @@ public class ReceiptServiceImpl implements ReceiptService {
             
             // Update receipt source if provided
             if (receiptDto.getReceiptSourceId() != null) {
-                ReceiptSource source = new ReceiptSource();
-                source.setId(receiptDto.getReceiptSourceId());
-                receipt.setReceiptSource(source);
+                Optional<ReceiptSource> existingSource = receiptSourceRepository.findById(receiptDto.getReceiptSourceId());
+                if (existingSource.isPresent()) {
+                    receipt.setReceiptSource(existingSource.get());
+                } else {
+                    // Create and persist new receipt source if not found
+                    ReceiptSource source = new ReceiptSource();
+                    source.setId(receiptDto.getReceiptSourceId());
+                    source.setRetailerName(receiptDto.getDescription().toUpperCase());
+                    ReceiptSource savedSource = receiptSourceRepository.save(source);
+                    receipt.setReceiptSource(savedSource);
+                }
             }
         } else {
             // Create new receipt
@@ -48,9 +60,17 @@ public class ReceiptServiceImpl implements ReceiptService {
             receipt.setYear(receiptDto.getYear());
             
             if (receiptDto.getReceiptSourceId() != null) {
-                ReceiptSource source = new ReceiptSource();
-                source.setId(receiptDto.getReceiptSourceId());
-                receipt.setReceiptSource(source);
+                Optional<ReceiptSource> existingSource = receiptSourceRepository.findById(receiptDto.getReceiptSourceId());
+                if (existingSource.isPresent()) {
+                    receipt.setReceiptSource(existingSource.get());
+                } else {
+                    // Create and persist new receipt source if not found
+                    ReceiptSource source = new ReceiptSource();
+                    source.setId(receiptDto.getReceiptSourceId());
+                    source.setRetailerName(receiptDto.getDescription().toUpperCase());
+                    ReceiptSource savedSource = receiptSourceRepository.save(source);
+                    receipt.setReceiptSource(savedSource);
+                }
             }
         }
         
@@ -63,22 +83,21 @@ public class ReceiptServiceImpl implements ReceiptService {
         return receiptRepository.findById(id)
                 .map(receipt -> {
                     ReceiptDto dto = convertToDto(receipt);
-                    // Include related properties for detailed view
+                    // Include property allocations for detailed view
                     if (receipt.getPropertyReceipts() != null && !receipt.getPropertyReceipts().isEmpty()) {
-                        List<PropertyReceiptDto> relatedProperties = receipt.getPropertyReceipts()
+                        List<PropertyAllocationDto> allocations = receipt.getPropertyReceipts()
                                 .stream()
                                 .map(pr -> {
                                     Property property = pr.getProperty();
-                                    String address = buildAddress(property);
-                                    return new PropertyReceiptDto(
-                                            property.getId(),
+                                    // Calculate percentage based on portion
+                                    Integer percentage = (int) Math.round((pr.getPortion() / receipt.getAmount()) * 100);
+                                    return new PropertyAllocationDto(
                                             property.getName(),
-                                            address,
-                                            pr.getPortion()
+                                            percentage
                                     );
                                 })
                                 .collect(Collectors.toList());
-                        dto.setRelatedProperties(relatedProperties);
+                        dto.setPropertyAllocations(allocations);
                     }
                     return dto;
                 });
@@ -134,28 +153,5 @@ public class ReceiptServiceImpl implements ReceiptService {
         }
         
         return dto;
-    }
-
-    private String buildAddress(Property property) {
-        StringBuilder address = new StringBuilder();
-        if (property.getStreetNumber() != null) {
-            address.append(property.getStreetNumber()).append(" ");
-        }
-        if (property.getStreetName() != null) {
-            address.append(property.getStreetName()).append(", ");
-        }
-        if (property.getUnit() != null && !property.getUnit().isEmpty()) {
-            address.append(property.getUnit()).append(", ");
-        }
-        if (property.getCity() != null) {
-            address.append(property.getCity()).append(", ");
-        }
-        if (property.getState() != null) {
-            address.append(property.getState()).append(" ");
-        }
-        if (property.getZipCode() != null) {
-            address.append(property.getZipCode());
-        }
-        return address.toString().trim();
     }
 }
