@@ -45,10 +45,10 @@ public class ReceiptServiceImplReceiptSourceTest {
         receiptDto.setAmount(100.0);
         receiptDto.setReceiptDate("2026-01-26T10:30:00Z");
         receiptDto.setYear(2026);
-        receiptDto.setReceiptSourceId(1L);
+        receiptDto.setReceiptSourceId(1);
         
         ReceiptSource existingSource = new ReceiptSource();
-        existingSource.setId(1L);
+        existingSource.setId(1);
         existingSource.setRetailerName("STORE");
         
         Receipt savedReceipt = new Receipt();
@@ -57,15 +57,15 @@ public class ReceiptServiceImplReceiptSourceTest {
         savedReceipt.setAmount(100.0);
         savedReceipt.setReceiptSource(existingSource);
         
-        when(receiptSourceRepository.findById(1L)).thenReturn(Optional.of(existingSource));
+        when(receiptSourceRepository.findById(1)).thenReturn(Optional.of(existingSource));
         when(receiptRepository.save(any(Receipt.class))).thenReturn(savedReceipt);
         
         ReceiptDto result = receiptService.upsertReceipt(receiptDto);
         
         assertNotNull(result);
         assertEquals(100L, result.getId());
-        assertEquals(1L, result.getReceiptSourceId());
-        verify(receiptSourceRepository).findById(1L);
+        assertEquals(1, result.getReceiptSourceId());
+        verify(receiptSourceRepository).findById(1);
     }
     
     @Test
@@ -75,7 +75,7 @@ public class ReceiptServiceImplReceiptSourceTest {
         receiptDto.setAmount(150.0);
         receiptDto.setReceiptDate("2026-01-26T10:30:00Z");
         receiptDto.setYear(2026);
-        receiptDto.setReceiptSourceId(2L);
+        receiptDto.setReceiptSourceId(2);
         
         Receipt savedReceipt = new Receipt();
         savedReceipt.setId(101L);
@@ -83,11 +83,11 @@ public class ReceiptServiceImplReceiptSourceTest {
         savedReceipt.setAmount(150.0);
         
         ReceiptSource newSource = new ReceiptSource();
-        newSource.setId(2L);
+        newSource.setId(2);
         newSource.setRetailerName("NEWSTORE - ITEMS");
         savedReceipt.setReceiptSource(newSource);
         
-        when(receiptSourceRepository.findById(2L)).thenReturn(Optional.empty());
+        when(receiptSourceRepository.findById(2)).thenReturn(Optional.empty());
         when(receiptSourceRepository.save(any(ReceiptSource.class))).thenReturn(newSource);
         when(receiptRepository.save(any(Receipt.class))).thenReturn(savedReceipt);
         
@@ -95,7 +95,7 @@ public class ReceiptServiceImplReceiptSourceTest {
         
         assertNotNull(result);
         assertEquals(101L, result.getId());
-        verify(receiptSourceRepository).findById(2L);
+        verify(receiptSourceRepository).findById(2);
         verify(receiptSourceRepository).save(any(ReceiptSource.class));
     }
     
@@ -107,7 +107,7 @@ public class ReceiptServiceImplReceiptSourceTest {
         receiptDto.setAmount(200.0);
         receiptDto.setReceiptDate("2026-01-26T10:30:00Z");
         receiptDto.setYear(2026);
-        receiptDto.setReceiptSourceId(3L);
+        receiptDto.setReceiptSourceId(3);
         
         Receipt existingReceipt = new Receipt();
         existingReceipt.setId(50L);
@@ -115,7 +115,7 @@ public class ReceiptServiceImplReceiptSourceTest {
         existingReceipt.setAmount(100.0);
         
         ReceiptSource source = new ReceiptSource();
-        source.setId(3L);
+        source.setId(3);
         source.setRetailerName("STORE");
         
         Receipt updatedReceipt = new Receipt();
@@ -126,16 +126,16 @@ public class ReceiptServiceImplReceiptSourceTest {
         
         when(receiptRepository.existsById(50L)).thenReturn(true);
         when(receiptRepository.findById(50L)).thenReturn(Optional.of(existingReceipt));
-        when(receiptSourceRepository.findById(3L)).thenReturn(Optional.of(source));
+        when(receiptSourceRepository.findById(3)).thenReturn(Optional.of(source));
         when(receiptRepository.save(any(Receipt.class))).thenReturn(updatedReceipt);
         
         ReceiptDto result = receiptService.upsertReceipt(receiptDto);
         
         assertNotNull(result);
         assertEquals(50L, result.getId());
-        assertEquals(3L, result.getReceiptSourceId());
+        assertEquals(3, result.getReceiptSourceId());
         verify(receiptRepository).findById(50L);
-        verify(receiptSourceRepository).findById(3L);
+        verify(receiptSourceRepository).findById(3);
     }
     
     @Test

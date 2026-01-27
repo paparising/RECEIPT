@@ -38,12 +38,22 @@ public class ReceiptDtoMapper {
         int year = extractYear(request.getReceiptDate());
         dto.setYear(year);
         
-        // Search for existing ReceiptSource by storeName and set ID if found
+        // Search for existing ReceiptSource by storeName and set ID if found, or create new
         if (request.getStoreName() != null && !request.getStoreName().isEmpty()) {
             String upperCaseStoreName = request.getStoreName().toUpperCase();
             Optional<ReceiptSource> existingSource = receiptSourceRepository.findByRetailerName(upperCaseStoreName);
+            
             if (existingSource.isPresent()) {
                 dto.setReceiptSourceId(existingSource.get().getId());
+            } else {
+                // Create new ReceiptSource if not found
+                ReceiptSource newSource = new ReceiptSource();
+                newSource.setRetailerName(upperCaseStoreName);
+                newSource.setDescription(request.getReceiptDescription() != null ? 
+                    request.getReceiptDescription() : "Auto-created receipt source");
+                
+                ReceiptSource savedSource = receiptSourceRepository.save(newSource);
+                dto.setReceiptSourceId(savedSource.getId());
             }
         }
         

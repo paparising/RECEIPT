@@ -14,10 +14,10 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
     List<Receipt> findByYear(Integer year);
     
     // Search by receipt source ID
-    List<Receipt> findByReceiptSourceId(Long receiptSourceId);
+    List<Receipt> findByReceiptSourceId(Integer receiptSourceId);
     
     // Search by receipt source ID and year
-    List<Receipt> findByReceiptSourceIdAndYear(Long receiptSourceId, Integer year);
+    List<Receipt> findByReceiptSourceIdAndYear(Integer receiptSourceId, Integer year);
     
     // Check if receipt exists by ID
     boolean existsById(Long id);

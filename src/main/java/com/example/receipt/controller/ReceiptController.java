@@ -81,7 +81,7 @@ public class ReceiptController {
     
     // Search by source
     @GetMapping("/search/source/{sourceId}")
-    public ResponseEntity<List<ReceiptDto>> getReceiptsBySource(@PathVariable Long sourceId) {
+    public ResponseEntity<List<ReceiptDto>> getReceiptsBySource(@PathVariable Integer sourceId) {
         List<ReceiptDto> receipts = receiptService.getReceiptsBySource(sourceId);
         return ResponseEntity.ok(receipts);
     }
@@ -89,7 +89,7 @@ public class ReceiptController {
     // Search by source and year
     @GetMapping("/search/source/{sourceId}/year/{year}")
     public ResponseEntity<List<ReceiptDto>> getReceiptsBySourceAndYear(
-            @PathVariable Long sourceId,
+            @PathVariable Integer sourceId,
             @PathVariable Integer year) {
         List<ReceiptDto> receipts = receiptService.getReceiptsBySourceAndYear(sourceId, year);
         return ResponseEntity.ok(receipts);

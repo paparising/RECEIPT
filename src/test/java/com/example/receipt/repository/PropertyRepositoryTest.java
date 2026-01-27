@@ -49,6 +49,7 @@ public class PropertyRepositoryTest {
         propertyReceipt.setProperty(property);
         propertyReceipt.setReceipt(receipt);
         propertyReceipt.setPortion(100.0);
+        propertyReceipt.setPercentage(100);
         entityManager.persistAndFlush(propertyReceipt);
 
         entityManager.clear();
@@ -100,12 +101,14 @@ public class PropertyRepositoryTest {
         pr1.setProperty(property);
         pr1.setReceipt(receipt2024);
         pr1.setPortion(150.0);
+        pr1.setPercentage(100);
         entityManager.persistAndFlush(pr1);
 
         PropertyReceipt pr2 = new PropertyReceipt();
         pr2.setProperty(property);
         pr2.setReceipt(receipt2023);
         pr2.setPortion(200.0);
+        pr2.setPercentage(100);
         entityManager.persistAndFlush(pr2);
 
         entityManager.clear();

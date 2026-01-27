@@ -47,7 +47,7 @@ public class ReceiptServiceImplTest {
     @BeforeEach
     public void setUp() {
         testReceiptSource = new ReceiptSource();
-        testReceiptSource.setId(1L);
+        testReceiptSource.setId(1);
         testReceiptSource.setRetailerName("Test Retailer");
         testReceiptSource.setDescription("Test Retailer Description");
 
@@ -65,7 +65,7 @@ public class ReceiptServiceImplTest {
         testReceiptDto.setAmount(100.0);
         testReceiptDto.setReceiptDate("2024-01-15 10:30:00");
         testReceiptDto.setYear(2024);
-        testReceiptDto.setReceiptSourceId(1L);
+        testReceiptDto.setReceiptSourceId(1);
     }
 
     @Test
@@ -76,7 +76,7 @@ public class ReceiptServiceImplTest {
         newReceiptDto.setAmount(50.0);
         newReceiptDto.setReceiptDate("2024-01-20 14:00:00");
         newReceiptDto.setYear(2024);
-        newReceiptDto.setReceiptSourceId(1L);
+        newReceiptDto.setReceiptSourceId(1);
 
         Receipt newReceipt = new Receipt();
         newReceipt.setId(2L);
@@ -86,7 +86,7 @@ public class ReceiptServiceImplTest {
         newReceipt.setYear(2024);
         newReceipt.setReceiptSource(testReceiptSource);
 
-        when(receiptSourceRepository.findById(1L)).thenReturn(Optional.of(testReceiptSource));
+        when(receiptSourceRepository.findById(1)).thenReturn(Optional.of(testReceiptSource));
         when(receiptRepository.save(any(Receipt.class))).thenReturn(newReceipt);
 
         // Act
@@ -105,7 +105,7 @@ public class ReceiptServiceImplTest {
         testReceiptDto.setDescription("Updated Receipt");
         testReceiptDto.setAmount(150.0);
 
-        when(receiptSourceRepository.findById(1L)).thenReturn(Optional.of(testReceiptSource));
+        when(receiptSourceRepository.findById(1)).thenReturn(Optional.of(testReceiptSource));
         when(receiptRepository.existsById(1L)).thenReturn(true);
         when(receiptRepository.findById(1L)).thenReturn(Optional.of(testReceipt));
         when(receiptRepository.save(any(Receipt.class))).thenReturn(testReceipt);
@@ -308,16 +308,16 @@ public class ReceiptServiceImplTest {
         receiptList.add(testReceipt);
         receiptList.add(receipt2);
 
-        when(receiptRepository.findByReceiptSourceId(1L)).thenReturn(receiptList);
+        when(receiptRepository.findByReceiptSourceId(1)).thenReturn(receiptList);
 
         // Act
-        List<ReceiptDto> result = receiptService.getReceiptsBySource(1L);
+        List<ReceiptDto> result = receiptService.getReceiptsBySource(1);
 
         // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals(1L, result.get(0).getReceiptSourceId());
-        verify(receiptRepository, times(1)).findByReceiptSourceId(1L);
+        assertEquals(1, result.get(0).getReceiptSourceId());
+        verify(receiptRepository, times(1)).findByReceiptSourceId(1);
     }
 
     @Test
@@ -326,17 +326,17 @@ public class ReceiptServiceImplTest {
         List<Receipt> receiptList = new ArrayList<>();
         receiptList.add(testReceipt);
 
-        when(receiptRepository.findByReceiptSourceIdAndYear(1L, 2024)).thenReturn(receiptList);
+        when(receiptRepository.findByReceiptSourceIdAndYear(1, 2024)).thenReturn(receiptList);
 
         // Act
-        List<ReceiptDto> result = receiptService.getReceiptsBySourceAndYear(1L, 2024);
+        List<ReceiptDto> result = receiptService.getReceiptsBySourceAndYear(1, 2024);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(1L, result.get(0).getReceiptSourceId());
+        assertEquals(1, result.get(0).getReceiptSourceId());
         assertEquals(2024, result.get(0).getYear());
-        verify(receiptRepository, times(1)).findByReceiptSourceIdAndYear(1L, 2024);
+        verify(receiptRepository, times(1)).findByReceiptSourceIdAndYear(1, 2024);
     }
 
     @Test

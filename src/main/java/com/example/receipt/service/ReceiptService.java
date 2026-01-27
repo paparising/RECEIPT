@@ -24,8 +24,8 @@ public interface ReceiptService {
     List<ReceiptDto> getReceiptsByYear(Integer year);
     
     // Search receipts by receipt source ID
-    List<ReceiptDto> getReceiptsBySource(Long sourceId);
+    List<ReceiptDto> getReceiptsBySource(Integer sourceId);
     
     // Search receipts by source ID and year
-    List<ReceiptDto> getReceiptsBySourceAndYear(Long sourceId, Integer year);
+    List<ReceiptDto> getReceiptsBySourceAndYear(Integer sourceId, Integer year);
 }

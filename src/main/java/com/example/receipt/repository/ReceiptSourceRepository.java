@@ -6,6 +6,6 @@ import com.example.receipt.entity.ReceiptSource;
 import java.util.Optional;
 
 @Repository
-public interface ReceiptSourceRepository extends JpaRepository<ReceiptSource, Long> {
+public interface ReceiptSourceRepository extends JpaRepository<ReceiptSource, Integer> {
     Optional<ReceiptSource> findByRetailerName(String retailerName);
 }

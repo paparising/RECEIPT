@@ -20,6 +20,9 @@ public class PropertyReceipt {
     @Column(nullable = false)
     private Double portion;
 
+    @Column(nullable = false)
+    private Integer percentage;
+
     // Getters and Setters
     public Long getId() {
         return id;
@@ -51,5 +54,13 @@ public class PropertyReceipt {
 
     public void setPortion(Double portion) {
         this.portion = portion;
+    }
+
+    public Integer getPercentage() {
+        return percentage;
+    }
+
+    public void setPercentage(Integer percentage) {
+        this.percentage = percentage;
     }
 }

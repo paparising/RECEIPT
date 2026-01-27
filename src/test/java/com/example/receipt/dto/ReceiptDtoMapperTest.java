@@ -44,7 +44,12 @@ public class ReceiptDtoMapperTest {
         properties.add(new PropertyAllocationDto("Property 2", 40));
         request.setProperties(properties);
         
+        ReceiptSource savedSource = new ReceiptSource();
+        savedSource.setId(1);
+        savedSource.setRetailerName("WALMART");
+        
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.empty());
+        when(receiptSourceRepository.save(any(ReceiptSource.class))).thenReturn(savedSource);
         
         ReceiptDto dto = receiptDtoMapper.mapRequestToDto(request);
         
@@ -64,7 +69,12 @@ public class ReceiptDtoMapperTest {
         properties.add(new PropertyAllocationDto("Property 2", 30));
         request.setProperties(properties);
         
+        ReceiptSource savedSource = new ReceiptSource();
+        savedSource.setId(1);
+        savedSource.setRetailerName("WALMART");
+        
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.empty());
+        when(receiptSourceRepository.save(any(ReceiptSource.class))).thenReturn(savedSource);
         
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
             () -> receiptDtoMapper.mapRequestToDto(request));
@@ -76,7 +86,7 @@ public class ReceiptDtoMapperTest {
     @Test
     public void testMapRequestToDto_ReceiptSourceFound() {
         ReceiptSource existingSource = new ReceiptSource();
-        existingSource.setId(1L);
+        existingSource.setId(1);
         existingSource.setRetailerName("WALMART");
         
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.of(existingSource));
@@ -85,31 +95,38 @@ public class ReceiptDtoMapperTest {
         
         assertNotNull(dto);
         assertNotNull(dto.getReceiptSourceId());
-        assertEquals(1L, dto.getReceiptSourceId());
+        assertEquals(1, dto.getReceiptSourceId());
     }
     
     @Test
     public void testMapRequestToDto_ReceiptSourceNotFound() {
+        ReceiptSource savedSource = new ReceiptSource();
+        savedSource.setId(1);
+        savedSource.setRetailerName("WALMART");
+        
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.empty());
+        when(receiptSourceRepository.save(any(ReceiptSource.class))).thenReturn(savedSource);
         
         ReceiptDto dto = receiptDtoMapper.mapRequestToDto(request);
         
         assertNotNull(dto);
-        assertNull(dto.getReceiptSourceId());
+        assertNotNull(dto.getReceiptSourceId());
+        assertEquals(1, (int) dto.getReceiptSourceId());
+        verify(receiptSourceRepository).save(any(ReceiptSource.class));
     }
     
     @Test
     public void testMapRequestToDto_StoreNameCaseInsensitive() {
         request.setStoreName("walmart");
         ReceiptSource existingSource = new ReceiptSource();
-        existingSource.setId(2L);
+        existingSource.setId(2);
         existingSource.setRetailerName("WALMART");
         
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.of(existingSource));
         
         ReceiptDto dto = receiptDtoMapper.mapRequestToDto(request);
         
-        assertEquals(2L, dto.getReceiptSourceId());
+        assertEquals(2, dto.getReceiptSourceId());
         verify(receiptSourceRepository).findByRetailerName("WALMART");
     }
     
@@ -117,7 +134,12 @@ public class ReceiptDtoMapperTest {
     public void testMapRequestToDto_ExtractYear() {
         request.setReceiptDate("2023-06-15T14:30:00Z");
         
+        ReceiptSource savedSource = new ReceiptSource();
+        savedSource.setId(1);
+        savedSource.setRetailerName("WALMART");
+        
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.empty());
+        when(receiptSourceRepository.save(any(ReceiptSource.class))).thenReturn(savedSource);
         
         ReceiptDto dto = receiptDtoMapper.mapRequestToDto(request);
         
@@ -128,7 +150,12 @@ public class ReceiptDtoMapperTest {
     public void testMapRequestToDto_InvalidDateFormat() {
         request.setReceiptDate("invalid-date");
         
+        ReceiptSource savedSource = new ReceiptSource();
+        savedSource.setId(1);
+        savedSource.setRetailerName("WALMART");
+        
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.empty());
+        when(receiptSourceRepository.save(any(ReceiptSource.class))).thenReturn(savedSource);
         
         ReceiptDto dto = receiptDtoMapper.mapRequestToDto(request);
         
@@ -140,7 +167,12 @@ public class ReceiptDtoMapperTest {
     public void testMapRequestToDto_NoProperties() {
         request.setProperties(null);
         
+        ReceiptSource savedSource = new ReceiptSource();
+        savedSource.setId(1);
+        savedSource.setRetailerName("WALMART");
+        
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.empty());
+        when(receiptSourceRepository.save(any(ReceiptSource.class))).thenReturn(savedSource);
         
         ReceiptDto dto = receiptDtoMapper.mapRequestToDto(request);
         
@@ -156,7 +188,12 @@ public class ReceiptDtoMapperTest {
         properties.add(new PropertyAllocationDto("Property 3", 25));
         request.setProperties(properties);
         
+        ReceiptSource savedSource = new ReceiptSource();
+        savedSource.setId(1);
+        savedSource.setRetailerName("WALMART");
+        
         when(receiptSourceRepository.findByRetailerName("WALMART")).thenReturn(Optional.empty());
+        when(receiptSourceRepository.save(any(ReceiptSource.class))).thenReturn(savedSource);
         
         ReceiptDto dto = receiptDtoMapper.mapRequestToDto(request);
         

@@ -54,7 +54,7 @@ public class ReceiptSourceRepositoryTest {
         Optional<ReceiptSource> result = receiptSourceRepository.findByRetailerName("TARGET");
         assertTrue(result.isPresent());
         
-        Long id = result.get().getId();
+        Integer id = result.get().getId();
         Optional<ReceiptSource> foundById = receiptSourceRepository.findById(id);
         
         assertTrue(foundById.isPresent());

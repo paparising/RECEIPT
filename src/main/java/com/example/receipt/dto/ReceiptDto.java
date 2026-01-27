@@ -9,7 +9,7 @@ public class ReceiptDto {
     private Double amount;
     private String receiptDate;
     private Integer year;
-    private Long receiptSourceId;
+    private Integer receiptSourceId;
     private List<PropertyAllocationDto> propertyAllocations;
     
     // Constructors
@@ -23,7 +23,7 @@ public class ReceiptDto {
         this.year = year;
     }
     
-    public ReceiptDto(String description, Double amount, String receiptDate, Integer year, Long receiptSourceId) {
+    public ReceiptDto(String description, Double amount, String receiptDate, Integer year, Integer receiptSourceId) {
         this.description = description;
         this.amount = amount;
         this.receiptDate = receiptDate;
@@ -72,11 +72,11 @@ public class ReceiptDto {
         this.year = year;
     }
     
-    public Long getReceiptSourceId() {
+    public Integer getReceiptSourceId() {
         return receiptSourceId;
     }
     
-    public void setReceiptSourceId(Long receiptSourceId) {
+    public void setReceiptSourceId(Integer receiptSourceId) {
         this.receiptSourceId = receiptSourceId;
     }
 

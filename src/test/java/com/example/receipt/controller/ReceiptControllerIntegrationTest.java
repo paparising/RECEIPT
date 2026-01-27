@@ -48,7 +48,7 @@ public class ReceiptControllerIntegrationTest {
         testReceiptDto.setAmount(100.0);
         testReceiptDto.setReceiptDate("2024-01-15 10:30:00");
         testReceiptDto.setYear(2024);
-        testReceiptDto.setReceiptSourceId(1L);
+        testReceiptDto.setReceiptSourceId(1);
     }
 
     @Test
@@ -82,7 +82,7 @@ public class ReceiptControllerIntegrationTest {
         receipt2.setAmount(200.0);
         receipt2.setReceiptDate("2024-01-16 11:00:00");
         receipt2.setYear(2024);
-        receipt2.setReceiptSourceId(1L);
+        receipt2.setReceiptSourceId(1);
         receiptList.add(receipt2);
 
         Page<ReceiptDto> page = new PageImpl<>(receiptList);
@@ -189,7 +189,7 @@ public class ReceiptControllerIntegrationTest {
         receipt2.setAmount(200.0);
         receipt2.setReceiptDate("2024-01-16 11:00:00");
         receipt2.setYear(2024);
-        receipt2.setReceiptSourceId(1L);
+        receipt2.setReceiptSourceId(1);
         receiptList.add(receipt2);
 
         when(receiptService.getReceiptsByYear(2024)).thenReturn(receiptList);
@@ -225,17 +225,17 @@ public class ReceiptControllerIntegrationTest {
         List<ReceiptDto> receiptList = new ArrayList<>();
         receiptList.add(testReceiptDto);
 
-        when(receiptService.getReceiptsBySource(1L)).thenReturn(receiptList);
+        when(receiptService.getReceiptsBySource(1)).thenReturn(receiptList);
 
         // Act
-        ResponseEntity<List<ReceiptDto>> response = receiptController.getReceiptsBySource(1L);
+        ResponseEntity<List<ReceiptDto>> response = receiptController.getReceiptsBySource(1);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals(1L, response.getBody().get(0).getReceiptSourceId());
-        verify(receiptService, times(1)).getReceiptsBySource(1L);
+        assertEquals(1, response.getBody().get(0).getReceiptSourceId());
+        verify(receiptService, times(1)).getReceiptsBySource(1);
     }
 
     @Test
@@ -244,18 +244,18 @@ public class ReceiptControllerIntegrationTest {
         List<ReceiptDto> receiptList = new ArrayList<>();
         receiptList.add(testReceiptDto);
 
-        when(receiptService.getReceiptsBySourceAndYear(1L, 2024)).thenReturn(receiptList);
+        when(receiptService.getReceiptsBySourceAndYear(1, 2024)).thenReturn(receiptList);
 
         // Act
-        ResponseEntity<List<ReceiptDto>> response = receiptController.getReceiptsBySourceAndYear(1L, 2024);
+        ResponseEntity<List<ReceiptDto>> response = receiptController.getReceiptsBySourceAndYear(1, 2024);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals(1L, response.getBody().get(0).getReceiptSourceId());
+        assertEquals(1, response.getBody().get(0).getReceiptSourceId());
         assertEquals(2024, response.getBody().get(0).getYear());
-        verify(receiptService, times(1)).getReceiptsBySourceAndYear(1L, 2024);
+        verify(receiptService, times(1)).getReceiptsBySourceAndYear(1, 2024);
     }
 
     @Test
@@ -297,7 +297,7 @@ public class ReceiptControllerIntegrationTest {
         savedReceipt.setAmount(50.0);
         savedReceipt.setReceiptDate("2024-01-20 14:00:00");
         savedReceipt.setYear(2024);
-        savedReceipt.setReceiptSourceId(1L);
+        savedReceipt.setReceiptSourceId(1);
 
         when(receiptDtoMapper.mapRequestToDto(any(ReceiptUpsertRequest.class))).thenReturn(savedReceipt);
         when(receiptService.upsertReceipt(any(ReceiptDto.class))).thenReturn(savedReceipt);
