@@ -53,18 +53,22 @@ public class ReportController {
                     user.getId()
             );
 
-            // Send to RabbitMQ for asynchronous processing
-            reportMessageProducer.sendReportRequest(reportRequest);
-
-            // Return immediate response to client
-            String reportId = UUID.randomUUID().toString();
-            YearlyReportResponse response = new YearlyReportResponse(
-                    "Report generation started. You will receive the PDF via email shortly.",
-                    "PROCESSING",
-                    reportId
-            );
-
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+            // Send to RabbitMQ for asynchronous processing and get response
+            ResponseEntity<?> producerResponse = reportMessageProducer.sendReportRequest(reportRequest);
+            
+            if (producerResponse.getStatusCode() == HttpStatus.OK) {
+                // Message was successfully queued
+                String reportId = UUID.randomUUID().toString();
+                YearlyReportResponse response = new YearlyReportResponse(
+                        "Report generation started. You will receive the PDF via email shortly.",
+                        "PROCESSING",
+                        reportId
+                );
+                return ResponseEntity.status(HttpStatus.OK).body(response);
+            } else {
+                // Failed to queue the message
+                return producerResponse;
+            }
 
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

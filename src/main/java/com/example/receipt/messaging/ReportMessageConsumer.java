@@ -8,9 +8,14 @@ import com.example.receipt.enums.ReportType;
 import com.example.receipt.factory.ReportGeneratorFactory;
 import com.example.receipt.repository.PropertyRepository;
 import com.example.receipt.service.EmailService;
+import com.example.receipt.service.FailureReportService;
 import com.example.receipt.service.ReportGenerator;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,6 +26,11 @@ import java.util.stream.Collectors;
 @Service
 public class ReportMessageConsumer {
 
+    private static final String RETRY_COUNT_HEADER = "x-retry-count";
+
+    @Value("${app.messaging.max-retries:3}")
+    private int maxRetries;
+
     @Autowired
     private PropertyRepository propertyRepository;
 
@@ -30,11 +40,21 @@ public class ReportMessageConsumer {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private FailureReportService failureReportService;
+
     @RabbitListener(queues = RabbitMQConfig.REPORT_QUEUE)
-    public void processReportRequest(YearlyReportRequest reportRequest) {
+    public void processReportRequest(YearlyReportRequest reportRequest, Message message, 
+                                    @Header(name = RETRY_COUNT_HEADER, required = false) Integer retryCount) {
+        int currentRetryCount = retryCount != null ? retryCount : 0;
+        
         try {
             System.out.println("Processing report request for property: " + reportRequest.getPropertyName() + 
-                             " with report type: " + reportRequest.getReportType());
+                             " with report type: " + reportRequest.getReportType() + 
+                             " (Attempt " + (currentRetryCount + 1) + "/" + maxRetries + ")");
             
             // Find property by name
             List<Property> properties = propertyRepository.findAll().stream()
@@ -88,15 +108,89 @@ public class ReportMessageConsumer {
             System.out.println("Report sent successfully to " + reportRequest.getUserEmail());
 
         } catch (Exception ex) {
-            System.err.println("Error processing report request: " + ex.getMessage());
+            System.err.println("Error processing report request (Attempt " + (currentRetryCount + 1) + "): " + ex.getMessage());
             ex.printStackTrace();
-            try {
-                sendErrorEmail(reportRequest.getUserEmail(), reportRequest.getPropertyName(), 
-                    "Error generating report: " + ex.getMessage());
-            } catch (Exception emailEx) {
-                System.err.println("Failed to send error email: " + emailEx.getMessage());
+            
+            if (currentRetryCount < maxRetries - 1) {
+                // Retry logic - send back to queue with incremented retry count
+                System.out.println("Retrying report request for property: " + reportRequest.getPropertyName() + 
+                                 " (Retry " + (currentRetryCount + 1) + "/" + (maxRetries - 1) + ")");
+                retryReportRequest(reportRequest, currentRetryCount + 1);
+            } else {
+                // Max retries exceeded - send to DLQ
+                System.err.println("Max retries exceeded for report request. Sending to Dead Letter Queue.");
+                sendToDLQ(reportRequest, ex.getMessage());
+                
+                try {
+                    sendErrorEmail(reportRequest.getUserEmail(), reportRequest.getPropertyName(), 
+                        "Error generating report after " + maxRetries + " attempts: " + ex.getMessage());
+                } catch (Exception emailEx) {
+                    System.err.println("Failed to send error email: " + emailEx.getMessage());
+                }
             }
         }
+    }
+
+    private void retryReportRequest(YearlyReportRequest reportRequest, int retryCount) {
+        try {
+            // Send message back to queue with retry count header
+            rabbitTemplate.convertAndSend(
+                RabbitMQConfig.REPORT_EXCHANGE,
+                RabbitMQConfig.REPORT_ROUTING_KEY,
+                reportRequest,
+                message -> {
+                    message.getMessageProperties().setHeader(RETRY_COUNT_HEADER, retryCount);
+                    return message;
+                }
+            );
+            System.out.println("Report request requeued with retry count: " + retryCount);
+        } catch (Exception retryEx) {
+            System.err.println("Failed to retry report request: " + retryEx.getMessage());
+        }
+    }
+
+    private void sendToDLQ(YearlyReportRequest reportRequest, String errorMessage) {
+        try {
+            LocalDateTime failedTimestamp = LocalDateTime.now();
+            String dlqMessage = "Failed report request for property: " + reportRequest.getPropertyName() + 
+                              ", Year: " + reportRequest.getYear() + 
+                              ", Error: " + errorMessage + 
+                              ", Timestamp: " + failedTimestamp;
+            
+            // Save to database
+            failureReportService.createFailureReport(
+                reportRequest.getPropertyName(),
+                reportRequest.getYear(),
+                errorMessage,
+                failedTimestamp
+            );
+            
+            // Also send to DLQ for legacy compatibility
+            rabbitTemplate.convertAndSend(
+                RabbitMQConfig.REPORT_DLQ_EXCHANGE,
+                RabbitMQConfig.REPORT_DLQ_ROUTING_KEY,
+                dlqMessage,
+                message -> {
+                    message.getMessageProperties().setHeader("original-property", reportRequest.getPropertyName().getBytes());
+                    message.getMessageProperties().setHeader("original-year", reportRequest.getYear().toString().getBytes());
+                    message.getMessageProperties().setHeader("failed-timestamp", failedTimestamp.toString().getBytes());
+                    return message;
+                }
+            );
+            
+            System.out.println("Message sent to Dead Letter Queue and saved to failure_reports table for property: " + reportRequest.getPropertyName());
+        } catch (Exception dlqEx) {
+            System.err.println("Failed to send message to DLQ or save to database: " + dlqEx.getMessage());
+            dlqEx.printStackTrace();
+        }
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.REPORT_DLQ_QUEUE)
+    public void processDLQMessage(String message) {
+        System.err.println("[DLQ] Processing dead letter message: " + message);
+        // Messages are already saved to database via sendToDLQ()
+        // This listener is for monitoring/alerting purposes
+        // TODO: Integrate with monitoring/alerting system
     }
 
     private String createEmailHtml(Property property, Integer year, List<PropertyReceipt> receipts, ReportType reportType) {

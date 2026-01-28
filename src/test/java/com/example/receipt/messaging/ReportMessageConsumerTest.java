@@ -15,6 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,12 +41,16 @@ public class ReportMessageConsumerTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private RabbitTemplate rabbitTemplate;
+
     @InjectMocks
     private ReportMessageConsumer reportMessageConsumer;
 
     private YearlyReportRequest testRequest;
     private Property testProperty;
     private List<PropertyReceipt> testReceipts;
+    private Message testMessage;
 
     @BeforeEach
     public void setUp() {
@@ -81,6 +88,12 @@ public class ReportMessageConsumerTest {
             testReceipts.add(propertyReceipt);
         }
         testProperty.setPropertyReceipts(testReceipts);
+        
+        // Create test message
+        testMessage = mock(Message.class);
+        MessageProperties msgProps = new MessageProperties();
+        msgProps.setHeader("x-retry-count", 0);
+        when(testMessage.getMessageProperties()).thenReturn(msgProps);
     }
 
     @Test
@@ -94,7 +107,7 @@ public class ReportMessageConsumerTest {
         doNothing().when(emailService).sendReportEmail(anyString(), anyString(), anyString(), any(byte[].class), anyString());
 
         // Act
-        reportMessageConsumer.processReportRequest(testRequest);
+        reportMessageConsumer.processReportRequest(testRequest, testMessage, 0);
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
@@ -110,7 +123,7 @@ public class ReportMessageConsumerTest {
         doNothing().when(emailService).sendReportEmail(anyString(), anyString(), anyString());
 
         // Act
-        reportMessageConsumer.processReportRequest(testRequest);
+        reportMessageConsumer.processReportRequest(testRequest, testMessage, 0);
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
@@ -130,7 +143,7 @@ public class ReportMessageConsumerTest {
         doNothing().when(emailService).sendReportEmail(any(), any(), any());
 
         // Act
-        reportMessageConsumer.processReportRequest(testRequest);
+        reportMessageConsumer.processReportRequest(testRequest, testMessage, 0);
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
@@ -148,13 +161,12 @@ public class ReportMessageConsumerTest {
         doNothing().when(emailService).sendReportEmail(anyString(), anyString(), anyString());
 
         // Act
-        reportMessageConsumer.processReportRequest(testRequest);
+        reportMessageConsumer.processReportRequest(testRequest, testMessage, 0);
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
         verify(reportGeneratorFactory, times(1)).getGenerator(ReportType.PDF);
         verify(reportGenerator, times(1)).generateReport(any(), any(), any());
-        verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -169,7 +181,7 @@ public class ReportMessageConsumerTest {
                 .when(emailService).sendReportEmail(anyString(), anyString(), anyString(), any(byte[].class), anyString());
 
         // Act
-        reportMessageConsumer.processReportRequest(testRequest);
+        reportMessageConsumer.processReportRequest(testRequest, testMessage, 0);
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
@@ -201,7 +213,7 @@ public class ReportMessageConsumerTest {
         doNothing().when(emailService).sendReportEmail(any(), any(), any(), any(byte[].class), any());
 
         // Act
-        reportMessageConsumer.processReportRequest(anotherRequest);
+        reportMessageConsumer.processReportRequest(anotherRequest, testMessage, 0);
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
@@ -240,7 +252,7 @@ public class ReportMessageConsumerTest {
         doNothing().when(emailService).sendReportEmail(any(), any(), any(), any(byte[].class), any());
 
         // Act
-        reportMessageConsumer.processReportRequest(testRequest);
+        reportMessageConsumer.processReportRequest(testRequest, testMessage, 0);
 
         // Assert
         verify(propertyRepository, times(1)).findAll();
@@ -256,7 +268,7 @@ public class ReportMessageConsumerTest {
         doNothing().when(emailService).sendReportEmail(anyString(), anyString(), anyString());
 
         // Act - Should not throw exception
-        assertDoesNotThrow(() -> reportMessageConsumer.processReportRequest(testRequest));
+        assertDoesNotThrow(() -> reportMessageConsumer.processReportRequest(testRequest, testMessage, 0));
 
         // Assert
         verify(emailService, times(1)).sendReportEmail(anyString(), anyString(), anyString());
