@@ -290,6 +290,51 @@ curl -X POST "http://localhost:8080/api/reports/yearly?propertyName=Home&year=20
 
 For more examples and detailed endpoint documentation, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
 
+## ✅ Request Validation
+
+The application includes comprehensive input validation to ensure data integrity:
+
+### Validation Features
+
+- **Receipt Validation**
+  - Receipt date is required and must not be blank
+  - Total amount must be greater than $0.01
+  - Store name is required (1-255 characters)
+  - Description is optional but limited to 500 characters
+  - Properties are validated with cascade validation
+
+- **Property Allocation Validation**
+  - Property name is required
+  - Allocation percentage must be between 0-100%
+  - All values are validated automatically
+
+### Error Response Example
+
+When validation fails, you receive HTTP 400 Bad Request:
+
+```json
+{
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "total",
+      "defaultMessage": "Total amount must be greater than 0",
+      "rejectedValue": -50.0,
+      "code": "DecimalMin"
+    }
+  ]
+}
+```
+
+### Validation Documentation
+
+For complete validation details and examples, see:
+- **[VALIDATION_IMPLEMENTATION.md](VALIDATION_IMPLEMENTATION.md)** - Implementation guide
+- **[VALIDATION_EXAMPLES.md](VALIDATION_EXAMPLES.md)** - Request/response examples
+- **[VALIDATION_COMPLETE_SUMMARY.md](VALIDATION_COMPLETE_SUMMARY.md)** - Complete summary
+
 ## 🧪 Testing
 
 ### Run All Tests

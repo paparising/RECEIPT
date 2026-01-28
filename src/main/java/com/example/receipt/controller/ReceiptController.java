@@ -12,6 +12,9 @@ import com.example.receipt.dto.ReceiptDto;
 import com.example.receipt.dto.ReceiptUpsertRequest;
 import com.example.receipt.dto.ReceiptDtoMapper;
 import com.example.receipt.dto.ErrorResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +30,7 @@ public class ReceiptController {
     
     // Upsert receipt (create or update)
     @PostMapping("/upsert")
-    public ResponseEntity<?> upsertReceipt(@RequestBody ReceiptUpsertRequest request) {
+    public ResponseEntity<?> upsertReceipt(@Valid @RequestBody ReceiptUpsertRequest request) {
         try {
             // Map request to DTO
             ReceiptDto receiptDto = receiptDtoMapper.mapRequestToDto(request);
@@ -57,8 +60,8 @@ public class ReceiptController {
     // Get all receipts with pagination (default 100 per page)
     @GetMapping
     public ResponseEntity<Page<ReceiptDto>> getAllReceipts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "100") int size) {
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page must be >= 0") int page,
+            @RequestParam(defaultValue = "100") @Min(value = 1, message = "Size must be >= 1") int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<ReceiptDto> receipts = receiptService.getAllReceipts(pageable);
         return ResponseEntity.ok(receipts);
@@ -66,7 +69,8 @@ public class ReceiptController {
     
     // Get receipt by ID
     @GetMapping("/{id}")
-    public ResponseEntity<ReceiptDto> getReceiptById(@PathVariable Long id) {
+    public ResponseEntity<ReceiptDto> getReceiptById(
+            @PathVariable @NotNull(message = "Receipt ID is required") @Min(value = 1, message = "Receipt ID must be > 0") Long id) {
         Optional<ReceiptDto> receipt = receiptService.getReceiptById(id);
         return receipt.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -74,14 +78,16 @@ public class ReceiptController {
     
     // Search by year
     @GetMapping("/search/year/{year}")
-    public ResponseEntity<List<ReceiptDto>> getReceiptsByYear(@PathVariable Integer year) {
+    public ResponseEntity<List<ReceiptDto>> getReceiptsByYear(
+            @PathVariable @NotNull(message = "Year is required") @Min(value = 1900, message = "Year must be >= 1900") Integer year) {
         List<ReceiptDto> receipts = receiptService.getReceiptsByYear(year);
         return ResponseEntity.ok(receipts);
     }
     
     // Search by source
     @GetMapping("/search/source/{sourceId}")
-    public ResponseEntity<List<ReceiptDto>> getReceiptsBySource(@PathVariable Integer sourceId) {
+    public ResponseEntity<List<ReceiptDto>> getReceiptsBySource(
+            @PathVariable @NotNull(message = "Source ID is required") @Min(value = 1, message = "Source ID must be > 0") Integer sourceId) {
         List<ReceiptDto> receipts = receiptService.getReceiptsBySource(sourceId);
         return ResponseEntity.ok(receipts);
     }
@@ -89,15 +95,16 @@ public class ReceiptController {
     // Search by source and year
     @GetMapping("/search/source/{sourceId}/year/{year}")
     public ResponseEntity<List<ReceiptDto>> getReceiptsBySourceAndYear(
-            @PathVariable Integer sourceId,
-            @PathVariable Integer year) {
+            @PathVariable @NotNull(message = "Source ID is required") @Min(value = 1, message = "Source ID must be > 0") Integer sourceId,
+            @PathVariable @NotNull(message = "Year is required") @Min(value = 1900, message = "Year must be >= 1900") Integer year) {
         List<ReceiptDto> receipts = receiptService.getReceiptsBySourceAndYear(sourceId, year);
         return ResponseEntity.ok(receipts);
     }
     
     // Delete receipt
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteReceipt(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteReceipt(
+            @PathVariable @NotNull(message = "Receipt ID is required") @Min(value = 1, message = "Receipt ID must be > 0") Long id) {
         Optional<ReceiptDto> receipt = receiptService.getReceiptById(id);
         if (receipt.isPresent()) {
             receiptService.deleteReceipt(id);
