@@ -1,0 +1,252 @@
+# Default values for receipt-app
+# This is a YAML-formatted file
+
+# Global settings
+global:
+  environment: production
+  imagePullPolicy: IfNotPresent
+
+# Receipt Application Configuration
+replicaCount: 2
+
+image:
+  repository: receipt-app
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: receipt-app-sa
+
+# Pod Annotations
+podAnnotations: {}
+  # prometheus.io/scrape: "true"
+  # prometheus.io/port: "8080"
+  # prometheus.io/path: "/actuator/prometheus"
+
+# Pod Security Context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Container Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Service Configuration
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  annotations: {}
+  # For LoadBalancer or NodePort: use type: LoadBalancer or NodePort
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: receipt-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: receipt-app-tls
+      hosts:
+        - receipt-app.example.com
+
+# Resource Limits
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Node Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - receipt-app
+          topologyKey: kubernetes.io/hostname
+
+# Tolerations
+tolerations: []
+
+# Health Checks
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /actuator/health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Spring Boot Application Configuration
+app:
+  name: receipt-app
+  port: 8080
+  profiles: kubernetes
+
+# Database Configuration
+database:
+  type: mysql
+  host: mysql
+  port: 3306
+  name: appdb
+  username: appuser
+  # password: should be set via secrets or values override
+  poolSize: 10
+  hikariMaximumPoolSize: 20
+  hibernate:
+    ddlAuto: validate
+    dialect: org.hibernate.dialect.MySQL8Dialect
+
+# RabbitMQ Configuration
+rabbitmq:
+  enabled: true
+  host: rabbitmq
+  port: 5672
+  username: guest
+  # password: should be set via secrets
+  virtualHost: /
+  connectionTimeout: 10000
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.example.receipt: DEBUG
+  format: json
+  pattern: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# MySQL Bitnami Helm Chart Configuration
+mysql:
+  enabled: true
+  architecture: standalone
+  auth:
+    rootPassword: "rootpassword"
+    database: appdb
+    username: appuser
+    password: "apppassword"
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: standard
+    resources:
+      limits:
+        memory: 512Mi
+        cpu: 500m
+      requests:
+        memory: 256Mi
+        cpu: 250m
+    service:
+      type: ClusterIP
+      port: 3306
+
+# RabbitMQ Bitnami Helm Chart Configuration
+rabbitmq:
+  enabled: true
+  auth:
+    username: guest
+    password: "guest"
+    erlangCookie: "secretcookie"
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 500m
+    requests:
+      memory: 256Mi
+      cpu: 250m
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: standard
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 5672
+
+# Persistent Volume Configuration
+persistence:
+  enabled: true
+  # Use existing PVC
+  existingClaim: ""
+  # Or create new PVC
+  storageClassName: standard
+  accessMode: ReadWriteOnce
+  size: 5Gi
+
+# Configuration for external secrets or environment variables
+env:
+  SPRING_PROFILES_ACTIVE: kubernetes
+  SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+  JAVA_OPTS: "-Xms256m -Xmx512m"
+
+# Secrets configuration
+secrets:
+  # These should be created separately or use external secrets operator
+  dbPassword: ""
+  rabbitMQPassword: ""
+
+# Network Policy
+networkPolicy:
+  enabled: false
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Priority Class
+priorityClassName: ""

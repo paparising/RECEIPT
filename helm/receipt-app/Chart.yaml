@@ -1,0 +1,26 @@
+apiVersion: v2
+name: receipt-app
+description: A Helm chart for deploying Receipt Management application on Kubernetes
+type: application
+version: 1.0.0
+appVersion: "0.0.1"
+keywords:
+  - receipt
+  - spring-boot
+  - mysql
+  - rabbitmq
+maintainers:
+  - name: Development Team
+    email: dev@example.com
+home: https://github.com/example/receipt-app
+sources:
+  - https://github.com/example/receipt-app
+dependencies:
+  - name: mysql
+    version: "9.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: mysql.enabled
+  - name: rabbitmq
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: rabbitmq.enabled

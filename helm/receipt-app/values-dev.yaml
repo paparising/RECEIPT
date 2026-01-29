@@ -1,0 +1,73 @@
+# Development Environment Values
+# Use for development/testing deployments
+
+global:
+  environment: development
+
+replicaCount: 1
+
+image:
+  repository: receipt-app
+  tag: "latest"
+  pullPolicy: Always
+
+autoscaling:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+livenessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+logging:
+  level:
+    root: INFO
+    com.example.receipt: DEBUG
+
+database:
+  hibernate:
+    ddlAuto: update
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: receipt-app.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: receipt-app-tls-dev
+      hosts:
+        - receipt-app.dev.local
+
+mysql:
+  enabled: true
+  primary:
+    persistence:
+      size: 5Gi
+
+rabbitmq:
+  enabled: true
+  persistence:
+    size: 2Gi
+  replicaCount: 1
+
+persistence:
+  enabled: true
+  size: 2Gi

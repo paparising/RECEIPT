@@ -1,0 +1,125 @@
+# Production Environment Values
+# Use for production deployments
+
+global:
+  environment: production
+
+replicaCount: 3
+
+image:
+  repository: receipt-app
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 75
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+logging:
+  level:
+    root: WARN
+    com.example.receipt: INFO
+
+database:
+  hibernate:
+    ddlAuto: validate
+  hikariMaximumPoolSize: 30
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+  hosts:
+    - host: receipt-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: receipt-app-tls-prod
+      hosts:
+        - receipt-app.example.com
+
+mysql:
+  enabled: true
+  primary:
+    persistence:
+      size: 50Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+      requests:
+        memory: 512Mi
+        cpu: 500m
+
+rabbitmq:
+  enabled: true
+  persistence:
+    size: 20Gi
+    storageClass: "fast-ssd"
+  replicaCount: 3
+  resources:
+    limits:
+      memory: 1Gi
+      cpu: 1000m
+    requests:
+      memory: 512Mi
+      cpu: 500m
+
+persistence:
+  enabled: true
+  size: 50Gi
+  storageClass: "fast-ssd"
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+networkPolicy:
+  enabled: true
+
+priorityClassName: "high-priority"
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - receipt-app
+        topologyKey: kubernetes.io/hostname
+
+tolerations:
+  - key: "production"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"

@@ -1,0 +1,99 @@
+# Kubernetes Namespace Setup
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: receipt-app-dev
+  labels:
+    name: receipt-app-dev
+    environment: development
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: receipt-app-staging
+  labels:
+    name: receipt-app-staging
+    environment: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: receipt-app-prod
+  labels:
+    name: receipt-app-prod
+    environment: production
+---
+# Storage Class for fast SSD (if available in your cluster)
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+---
+# Storage Class for standard storage
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+---
+# Priority Class for production
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000
+globalDefault: false
+description: "High priority class for production workloads"
+---
+# Priority Class for development
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: low-priority
+value: 100
+globalDefault: false
+description: "Low priority class for development workloads"
+---
+# Network Policy - Deny all ingress by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: receipt-app-prod
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+# Network Policy - Allow from ingress controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-ingress
+  namespace: receipt-app-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: receipt-app
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080

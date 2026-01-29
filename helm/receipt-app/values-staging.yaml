@@ -1,0 +1,86 @@
+# Staging Environment Values
+# Use for staging/QA deployments
+
+global:
+  environment: staging
+
+replicaCount: 2
+
+image:
+  repository: receipt-app
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+resources:
+  limits:
+    cpu: 750m
+    memory: 768Mi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+livenessProbe:
+  initialDelaySeconds: 45
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 8
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+logging:
+  level:
+    root: INFO
+    com.example.receipt: INFO
+
+database:
+  hibernate:
+    ddlAuto: validate
+  hikariMaximumPoolSize: 15
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+  hosts:
+    - host: receipt-app.staging.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: receipt-app-tls-staging
+      hosts:
+        - receipt-app.staging.example.com
+
+mysql:
+  enabled: true
+  primary:
+    persistence:
+      size: 20Gi
+
+rabbitmq:
+  enabled: true
+  persistence:
+    size: 5Gi
+  replicaCount: 1
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true

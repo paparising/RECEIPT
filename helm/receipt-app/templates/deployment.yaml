@@ -1,0 +1,143 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "receipt-app.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "receipt-app.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "receipt-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.service.port }}"
+        prometheus.io/path: "/actuator/prometheus"
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "receipt-app.selectorLabels" . | nindent 8 }}
+        version: {{ .Chart.AppVersion }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "receipt-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.35
+          command: ['sh', '-c', 'until nc -z {{ .Values.database.host }} {{ .Values.database.port }}; do echo waiting for db; sleep 2; done']
+        - name: wait-for-rabbitmq
+          image: busybox:1.35
+          command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmq.host }} {{ .Values.rabbitmq.port }}; do echo waiting for rabbitmq; sleep 2; done']
+      
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.port }}
+              protocol: TCP
+          
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ .Values.app.profiles }}
+            - name: JAVA_OPTS
+              value: {{ .Values.env.JAVA_OPTS }}
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: {{ .Values.database.username }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "receipt-app.fullname" . }}-secret
+                  key: db-password
+            - name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+              value: "{{ .Values.database.hikariMaximumPoolSize }}"
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: {{ .Values.database.hibernate.ddlAuto }}
+            - name: SPRING_JPA_HIBERNATE_DIALECT
+              value: {{ .Values.database.hibernate.dialect }}
+            - name: SPRING_RABBITMQ_HOST
+              value: {{ .Values.rabbitmq.host }}
+            - name: SPRING_RABBITMQ_PORT
+              value: "{{ .Values.rabbitmq.port }}"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: {{ .Values.rabbitmq.username }}
+            - name: SPRING_RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "receipt-app.fullname" . }}-secret
+                  key: rabbitmq-password
+            - name: SPRING_RABBITMQ_VIRTUAL_HOST
+              value: {{ .Values.rabbitmq.virtualHost }}
+            - name: LOGGING_LEVEL_ROOT
+              value: {{ .Values.logging.level.root }}
+            - name: LOGGING_LEVEL_COM_EXAMPLE_RECEIPT
+              value: {{ .Values.logging.level.com.example.receipt }}
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: "health,info,metrics,prometheus"
+          
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.httpGet.path }}
+              port: {{ .Values.livenessProbe.httpGet.port }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.httpGet.path }}
+              port: {{ .Values.readinessProbe.httpGet.port }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+      
+      volumes:
+        - name: logs
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (include "receipt-app.fullname" .) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
